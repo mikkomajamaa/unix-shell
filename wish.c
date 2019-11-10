@@ -13,8 +13,7 @@ int main(int argc, char *argv[]) {
   size_t len = 0;
   char command[MAXLENGTH] = {0};
   char arguments[MAXLENGTH] = {0};
-  char *argv2[1];
-  char *argv3[] = {"-la", ".", NULL};
+  char *argv2[10] = {NULL};
   pid_t pid;
   int status;
 
@@ -31,20 +30,22 @@ int main(int argc, char *argv[]) {
 
   printf("wish> ");
   while (getline(&line, &len, stdin) != -1) {
+    for (i = 0; i < 10; i++) {
+      argv2[i] = NULL;
+    }
+
 
     if (strcmp(line, "exit\n") == 0) {
       free(line);
       exit(0);
     }
 
-    // TODO: handle commands (and arguments)
     for (i = 1, str1 = line; ; i++, str1 = NULL) {
       token = strtok_r(str1, "\n", &saveptr1);
       if (token == NULL) {
         break;
       }
-      //printf("%d: %s\n", i, token);
-      //
+
       strcpy(path, "\0");
       strcat(path, "/bin/");
 
@@ -60,33 +61,30 @@ int main(int argc, char *argv[]) {
           strcpy(command, "\0");
           strcat(command, subtoken);
         } else {
-          //strcat(arguments, " ");
-          argv2[j-1] = malloc(strlen(subtoken) + 1);
-          strcpy(argv2[j-1], subtoken);
+          argv2[j] = malloc(strlen(subtoken) + 1);
+          strcpy(argv2[j], subtoken);
         }
 
+        argv2[j] = malloc(strlen(subtoken) + 1);
+        strcpy(argv2[j], subtoken);
       }
 
-
-
-      //
-      //
 
       strcat(path, command);
       strcat(path, "\0");
 
-      printf("\nexec %s with arguments:\n", path);
+      //printf("\nexec %s with arguments:\n", path);
       //
       switch (pid = fork()) {
         case -1: // error in fork
           exit(1);
         case 0: // child process
-          if (execv(path, argv3) == -1) {
+          if (execv(path, argv2) == -1) {
              perror("execvp");
              exit(1);
           }
           break;
-        default:              // parent process
+        default: // parent process
            if (wait(&status) == -1) {
               perror("wait");
               exit(1);
@@ -94,13 +92,7 @@ int main(int argc, char *argv[]) {
         break;
       }
 
-
-      //path[MAXLENGTH] = {"\0"};
-
-      //command[MAXLENGTH] = {"\0"};
-      //printf("\n");
     }
-
 
     printf("wish> ");
   }
