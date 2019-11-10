@@ -18,7 +18,12 @@ int main(int argc, char *argv[]) {
   pid_t pid;
   int status;
 
+  // error messages
+  char no_dir_provided[30] = "No directory provided\n";
+  char dir_error[30] = "Error opening directory\n";
+  char cmd_not_found[30] = "Command not found\n";
   //
+
   char *str1, *str2, *token, *subtoken;
   char *saveptr1, *saveptr2;
   int i, j, k, path_set;
@@ -58,7 +63,6 @@ int main(int argc, char *argv[]) {
         }
 
         if (j == 0) {
-          //printf("exec %s with arguments: ", subtoken);
           strcpy(command, "\0");
           strcat(command, subtoken);
         } else {
@@ -87,6 +91,17 @@ int main(int argc, char *argv[]) {
         path_set = 1;
       }
 
+      // check if "cd" built-in command was given as an input
+      if (strcmp(command, "cd") == 0) {
+        // wrong number of arguments to cd
+        if (argv2[1] == NULL || argv2[2] != NULL) {
+          write(STDERR_FILENO, no_dir_provided, strlen(no_dir_provided));
+        } else if (chdir(argv2[1]) == -1) {
+          write(STDERR_FILENO, dir_error, strlen(dir_error));
+        }
+        continue;
+      }
+
       // continue if "path" command was given as an input
       if (path_set) {
         continue;
@@ -102,13 +117,14 @@ int main(int argc, char *argv[]) {
             execv always returned so child process is still running and needs to
             return explicitly */
             if (!path[k]) {
+              write(STDERR_FILENO, cmd_not_found, strlen(cmd_not_found));
               return 0;
             }
             strcpy(temp_path, "\0");
             strcat(temp_path, path[k]);
             strcat(temp_path, command);
             strcat(temp_path, "\0");
-            if (execv(temp_path, argv2) == -1);
+            execv(temp_path, argv2);
           }
           break;
         default: // parent process
