@@ -9,7 +9,8 @@
 int main(int argc, char *argv[]) {
   char *line = NULL;
   char *argument;
-  char path[MAXLENGTH] = "/bin/\0";
+  char *path[10] = {"/bin/\0"};
+  char temp_path[MAXLENGTH];
   size_t len = 0;
   char command[MAXLENGTH] = {0};
   char arguments[MAXLENGTH] = {0};
@@ -17,11 +18,10 @@ int main(int argc, char *argv[]) {
   pid_t pid;
   int status;
 
-
   //
   char *str1, *str2, *token, *subtoken;
   char *saveptr1, *saveptr2;
-  int i, j;
+  int i, j, k, path_set;
 
   // wrong number of arguments
   if (argc > 2) {
@@ -30,11 +30,15 @@ int main(int argc, char *argv[]) {
 
   printf("wish> ");
   while (getline(&line, &len, stdin) != -1) {
+    // boolean to check if path command was used
+    path_set = 0;
+
+    // initialize argv2
     for (i = 0; i < 10; i++) {
       argv2[i] = NULL;
     }
 
-
+    // check if "exit" built-in command was given as an input
     if (strcmp(line, "exit\n") == 0) {
       free(line);
       exit(0);
@@ -45,9 +49,6 @@ int main(int argc, char *argv[]) {
       if (token == NULL) {
         break;
       }
-
-      strcpy(path, "\0");
-      strcat(path, "/bin/");
 
       for (str2 = token, j = 0; ;str2 = NULL, j++) {
         subtoken = strtok_r(str2, " ", &saveptr2);
@@ -69,19 +70,45 @@ int main(int argc, char *argv[]) {
         strcpy(argv2[j], subtoken);
       }
 
+      // check if "path" built-in command was given as an input
+      if (strcmp(command, "path") == 0) {
+        for (k = 1; k < 10; k++) {
+          // no path given
+          if (!argv2[k] && k == 1) {
+            path[0] = NULL;
+          }
+          // end of arguments
+          if (!argv2[k]) break;
+          //
+          path[k-1] = malloc(strlen(argv2[k]));
+          strcpy(path[k-1], argv2[k]);
+        }
 
-      strcat(path, command);
-      strcat(path, "\0");
+        path_set = 1;
+      }
 
-      //printf("\nexec %s with arguments:\n", path);
-      //
+      // continue if "path" command was given as an input
+      if (path_set) {
+        continue;
+      }
+
       switch (pid = fork()) {
         case -1: // error in fork
           exit(1);
         case 0: // child process
-          if (execv(path, argv2) == -1) {
-             perror("execvp");
-             exit(1);
+          // iterate through path array and generate path
+          for (k = 0; k < 10; k++) {
+            /* If end of path array is reached it means execv never succeeded i.e.
+            execv always returned so child process is still running and needs to
+            return explicitly */
+            if (!path[k]) {
+              return 0;
+            }
+            strcpy(temp_path, "\0");
+            strcat(temp_path, path[k]);
+            strcat(temp_path, command);
+            strcat(temp_path, "\0");
+            if (execv(temp_path, argv2) == -1);
           }
           break;
         default: // parent process
