@@ -8,12 +8,10 @@
 
 int main(int argc, char *argv[]) {
   char *line = NULL;
-  char *argument;
   char *path[10] = {"/bin/\0"};
   char temp_path[MAXLENGTH];
   size_t len = 0;
   char command[MAXLENGTH] = {0};
-  char arguments[MAXLENGTH] = {0};
   char *argv2[10] = {NULL};
   pid_t pid;
   int status;
